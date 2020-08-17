@@ -1,58 +1,58 @@
-#include "FreeRTOS.h"
-#include "task.h"
+#include <opencm3uart.h>
 
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
+/*********************************************************************
+ * Send characters to the UART, slowly
+ *********************************************************************/
+static void  task1(void *args __attribute__((unused))) {
+	
+	char rec_array[128];
+	int	len;
 
-/*
- * Handler in case our application overflows the stack
- */
-extern void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName);
-
-void vApplicationStackOverflowHook(
-    xTaskHandle *pxTask __attribute__((unused)), 
-    signed portCHAR *pcTaskName __attribute__((unused))) {
-	for (;;);
-}
-
-/*
- * Task that toggles PC13, which is the LED
- */
-static void task1(void *args __attribute__((unused))) {
-    
-    for (;;) {
-		gpio_toggle(GPIOC, GPIO13);
-		vTaskDelay(pdMS_TO_TICKS(500));
+	for (;;) {
+			console_puts("Hi Please type Something !");
+			len = console_gets(rec_array, 128);
+			if (len) {
+				console_puts("\nYou entered : ");
+				console_puts(rec_array);
+				console_puts("\n");
+			} else {
+				console_puts("\nNo string entered\n");
+			}
 	}
 }
+static void task2(void *args __attribute__((unused))){
+	for (;;)
+	{
+		gpio_toggle(GPIOC,GPIO13);
+		vTaskDelay(pdMS_TO_TICKS(500));
+	}
+	
+}
 
-/*
- * Main loop, this is where our program starts
- */
-int main(void) {
-    // Setup main clock, using external 8MHz crystal 
-    rcc_clock_setup_in_hse_8mhz_out_72mhz();
+/*********************************************************************
+ * Main program
+ *********************************************************************/
+int
+main(void) {
 
-    // Enable clock for GPIO channel C
-    rcc_periph_clock_enable(RCC_GPIOC);
+	rcc_clock_setup_in_hse_8mhz_out_72mhz(); // Blue pill
 
-    // Set pinmode for PC13
+	// PC13:
+	rcc_periph_clock_enable(RCC_GPIOC);
 	gpio_set_mode(
 		GPIOC,
-		GPIO_MODE_OUTPUT_2_MHZ,
-		GPIO_CNF_OUTPUT_PUSHPULL,
-		GPIO13);
+                GPIO_MODE_OUTPUT_2_MHZ,
+                GPIO_CNF_OUTPUT_PUSHPULL,
+                GPIO13);
 
-	// Turn LED off
-	gpio_set(GPIOC, GPIO13);
+	uart_setup();
 
-    // Tell FreeRTOS about our toggle task, and set it's stack and priority
-	xTaskCreate(task1, "LED", 100, NULL, 2, NULL);
-
-    // Start RTOS Task scheduler
+	xTaskCreate(task1,"task1",100,NULL,configMAX_PRIORITIES-1,NULL);
+	xTaskCreate(task2,"task2",100,NULL,configMAX_PRIORITIES-1,NULL);
 	vTaskStartScheduler();
 
-    // The task scheduler is blocking, so we should never come here...
 	for (;;);
 	return 0;
 }
+
+// End
