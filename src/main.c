@@ -1,23 +1,21 @@
 #include <opencm3uart.h>
-
+#include <FreeRTOS.h>
+#include <task.h>
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
 /*********************************************************************
  * Send characters to the UART, slowly
  *********************************************************************/
 static void  task1(void *args __attribute__((unused))) {
 	
 	char rec_array[128];
-	int	len;
 
 	for (;;) {
 			console_puts("Hi Please type Something !");
-			len = console_gets(rec_array, 128);
-			if (len) {
-				console_puts("\nYou entered : ");
-				console_puts(rec_array);
-				console_puts("\n");
-			} else {
-				console_puts("\nNo string entered\n");
-			}
+			console_gets(rec_array, 10);
+			console_puts("\nYou entered : ");
+			console_puts(rec_array);
+			console_puts("\n");
 	}
 }
 static void task2(void *args __attribute__((unused))){
